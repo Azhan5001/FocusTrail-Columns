@@ -1,6 +1,30 @@
 # FocusTrail Columns
 
-A keyboard-driven file browser in the GNOME top bar, with side-by-side Miller columns, file operations, previews, and a visible focus trail. The active row gets a gray background and border. This repository packages the **Folders Column Browser Advanced V10.11 Focus Repair**, internal version **22**, retaining its original UUID `bookmarks-only@azhan` for upgrades.
+A keyboard-driven file browser in the GNOME top bar, with side-by-side Miller columns, file operations, previews, and a visible focus trail. The active row gets a gray background and border. This repository packages the **Folders Column Browser Advanced V10.11 Focus Repair**, internal version **24**, retaining its original UUID `bookmarks-only@azhan` for upgrades.
+
+## Drag files into WhatsApp and other apps
+
+1. Open the destination app or website and its file drop area.
+2. Open Folders, focus a local file, or select several files with Ctrl/Shift.
+3. Press **Ctrl + Shift + D**, or right-click → **Drag to Another App…**.
+4. Folders closes and **FocusTrail Drag** opens. Wait for **Ready**.
+5. Press and hold on the file card in that window, drag onto the destination, then release. Check its attachment preview before sending.
+
+This is a **two-step native drag workaround**. It does not transfer the original mouse press directly from a Shell row into the app. The GTK window creates a real OS drag, providing native file data and a URI list rather than pasting a filename. It offers COPY, so it does not move or delete the originals. The window closes automatically after the destination finishes reading a successful drag. Cancelled/rejected drops keep it open. Tick **Keep open after a successful drop** when you want to drag the same files repeatedly.
+
+**Local files are supported.** Copy SFTP/phone-only files into Downloads first. Folders can be offered but only destinations that accept directories can use them; for WhatsApp, choose individual supported files. A destination still controls accepted formats, sizes, sandbox access, and the drop area. No universal acceptance guarantee is possible.
+
+The **Open local drop test** button opens `drop-test.html`. Drop onto its blue box: it reports real browser File objects and attempts to read the first 16 bytes. It makes no network requests. If it passes but a website rejects a file, check the destination's supported formats/drop area.
+
+If the drag window ends up behind WhatsApp, press **Super + F**, focus the file(s), then **Ctrl + Shift + D** again. The existing window is brought forward. If you selected different files, an idle window is replaced with the new selection; an active drag is never interrupted. The Keep open choice is retained when replacing an idle window, and defaults to off on a fresh launch.
+
+The helper requires **GJS and GTK 4.8 or later** (GNOME 45-era GTK meets this API minimum). On Fedora, if missing:
+
+```bash
+sudo dnf install gjs gtk4
+```
+
+The installer checks actual GTK content-provider APIs before updating the extension. Read [the research and test report](docs/DRAG-DESIGN.md) for the approach, limits, and verification status.
 
 ## Essential shortcuts
 
@@ -9,6 +33,7 @@ A keyboard-driven file browser in the GNOME top bar, with side-by-side Miller co
 | Shortcut | Action |
 | --- | --- |
 | **Super + F** | Open Folders (customizable) |
+| **Ctrl + Shift + D** | Open a native drag window for the focused file or multi-selection |
 | **Up / Down** | Move between items |
 | **Right / Enter** | Open a folder and focus the new column; Enter opens a file with its default app |
 | **Left / Backspace** | Navigate back |
@@ -71,7 +96,7 @@ The pointer exit delay smooths row transitions; it is not an automatic preview l
 
 ## Install
 
-Requires GNOME Shell, `gnome-extensions`, and `glib-compile-schemas` (provided by `glib2` on Fedora). The metadata declares GNOME Shell 45–51; these declarations do not guarantee testing on each version.
+Requires GNOME Shell, GJS, GTK 4.8+, `gnome-extensions`, and `glib-compile-schemas` (provided by `glib2` on Fedora). The metadata declares GNOME Shell 45–51; these declarations do not guarantee testing on each version.
 
 Download and extract this repository or clone it. In the project directory run:
 
@@ -80,7 +105,7 @@ Download and extract this repository or clone it. In the project directory run:
 gnome-extensions info bookmarks-only@azhan
 ```
 
-The expected internal version is **22**. The installer backs up an existing installation in `~/.local/share/bookmarks-only-backups/`, copies source into `~/.local/share/gnome-shell/extensions/bookmarks-only@azhan`, compiles the schema, and enables the extension. Existing settings under the same schema remain. Close and reopen the menu; if GNOME still runs old code, log out and back in.
+The expected internal version is **24**. The installer backs up an existing installation in `~/.local/share/bookmarks-only-backups/`, copies source into `~/.local/share/gnome-shell/extensions/bookmarks-only@azhan`, compiles the schema, and enables the extension. Existing settings under the same schema remain. After upgrading, log out and back in to reload Shell JavaScript modules. Merely disabling and enabling can leave imported modules cached.
 
 If the installed schema is missing, run `./repair-current-install.sh` and check extension info again.
 
@@ -90,6 +115,11 @@ If the installed schema is missing, run `./repair-current-install.sh` and check 
 | --- | --- |
 | `extension.js` | Menu, navigation, previews, cache, file operations |
 | `prefs.js` | Settings window |
+| `drag-bridge.js` | Launches the separate drag helper from Shell |
+| `drag-helper.js` | Native GTK drag window and file providers |
+| `drag-payload.js` | Selection validation and URI serialization |
+| `drop-test.html` | Offline browser file-drop test |
+| `tests/` | Payload, lifecycle, and installer checks |
 | `metadata.json` | UUID and declared Shell versions |
 | `schemas/` | GSettings schema, compiled during installation |
 | `install.sh` | Installation and backup |
@@ -97,4 +127,18 @@ If the installed schema is missing, run `./repair-current-install.sh` and check 
 
 ## License
 
-Licensed under the MIT License. See [LICENSE](LICENSE).
+No license is asserted in this package. Add one after confirming the rights to all included code.
+
+## Developer checks
+
+```bash
+node --test tests/*.test.mjs
+python3 tests/test_install.py
+gjs -m drag-helper.js --check
+```
+
+The first two commands test logic and installation with mocked desktop commands. The third checks real GJS/GTK provider construction; it does not perform a desktop drag. End-to-end validation requires a running GNOME session and a receiving browser/application.
+
+## Updating an existing GitHub repository
+
+Copy this build's source files, helper files, docs, tests and installer into your existing working tree. Keep its `.git` directory and any `LICENSE` you already added. Review `git diff`, then commit and push. Installing the extension and updating your GitHub checkout are separate operations.

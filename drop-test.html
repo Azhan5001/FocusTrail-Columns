@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'">
+<title>FocusTrail — File drop test</title>
+<style>
+body{font:17px/1.55 system-ui,sans-serif;max-width:820px;margin:60px auto;padding:0 24px;background:#151923;color:#e9edf5}
+h1{font-size:32px;margin-bottom:8px}p{color:#b7c2d5}.zone{border:2px dashed #79b8ff;border-radius:18px;padding:54px 24px;text-align:center;background:#202a3a;margin:28px 0}.zone.over{background:#274369}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#202a3a;padding:20px;border-radius:12px}strong{color:#9ecbff}
+</style>
+<h1>Does your browser receive real files?</h1>
+<p>Open Folders, select local files, press <strong>Ctrl + Shift + D</strong>, then drag the card from FocusTrail Drag into the box below.</p>
+<div class="zone" id="zone">Drop files here</div>
+<p>This local page makes no network requests. It checks file names, sizes, and whether the first 16 bytes are readable. It does not upload anything.</p>
+<pre id="result">Waiting for a drop…</pre>
+<script>
+const zone = document.getElementById('zone');
+const result = document.getElementById('result');
+let sequence = 0;
+window.addEventListener('dragover', event => event.preventDefault());
+window.addEventListener('drop', event => event.preventDefault());
+zone.addEventListener('dragenter', () => zone.classList.add('over'));
+zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+zone.addEventListener('dragover', event => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+});
+zone.addEventListener('drop', async event => {
+    event.preventDefault();
+    zone.classList.remove('over');
+    const current = ++sequence;
+    // Snapshot during drop; DataTransfer becomes protected after the event.
+    const files = Array.from(event.dataTransfer.files);
+    const types = Array.from(event.dataTransfer.types);
+    const lines = [`Offered types: ${types.join(', ')}`, `Real File objects: ${files.length}`, ''];
+    if (!files.length)
+        lines.push('No files received. A text/path-only drop does not pass this test.');
+    for (const file of files) {
+        try {
+            await file.slice(0, 16).arrayBuffer();
+            lines.push(`PASS — ${file.name} (${file.size} bytes; ${file.type || 'unknown type'}): readable`);
+        } catch (error) {
+            lines.push(`FAIL — ${file.name}: ${error.message}`);
+        }
+    }
+    if (current === sequence)
+        result.textContent = lines.join('\n');
+});
+</script>
+</html>

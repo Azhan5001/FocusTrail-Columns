@@ -15,6 +15,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
+import {DragBridge} from './drag-bridge.js';
 
 /*
  * Ensure the extension-local GSettings schema is compiled before GNOME Shell
@@ -215,7 +216,7 @@ const ROW_SELECTED_FOCUS_STYLE = `
 
 const BookmarksIndicator = GObject.registerClass(
 class BookmarksIndicator extends PanelMenu.Button {
-    _init(settings = null) {
+    _init(settings = null, extensionPath = '') {
         super._init(
             0.0,
             'Folders Column Browser',
@@ -233,6 +234,8 @@ class BookmarksIndicator extends PanelMenu.Button {
 
         this._settings = settings;
         this._settingsChangedIds = [];
+        this._dragBridge = new DragBridge(extensionPath, message =>
+            Main.notifyError('FocusTrail Drag', message));
 
 
         /*
@@ -380,6 +383,7 @@ class BookmarksIndicator extends PanelMenu.Button {
         );
 
         this.connect('destroy', () => {
+            this._dragBridge.destroy();
             this._disconnectSettings();
             this._closeContextMenu();
             this._cancelFolderHoverOpen();
@@ -1740,6 +1744,11 @@ class BookmarksIndicator extends PanelMenu.Button {
         }
 
         if (ctrlHeld && shiftHeld) {
+            if (key === Clutter.KEY_d || key === Clutter.KEY_D) {
+                this._openDragWindow(row);
+                return Clutter.EVENT_STOP;
+            }
+
             if (key === Clutter.KEY_t || key === Clutter.KEY_T) {
                 this._openTrash();
                 return Clutter.EVENT_STOP;
@@ -2353,6 +2362,31 @@ class BookmarksIndicator extends PanelMenu.Button {
     }
 
 
+    _openDragWindow(row) {
+        const files = this._selectionFilesForRow(row);
+        if (!files.length || row?._folderBrowserVirtualGroup) {
+            this._showStatus('Choose a file or folder first');
+            return;
+        }
+        try {
+            // Snapshot selection before menu.close() clears multi-selection.
+            this._dragBridge.open(files);
+            this._closeContextMenu();
+            this.menu.close();
+            // A user-requested raise from Shell also works when Wayland focus
+            // protection would leave an existing GTK window behind the target app.
+            for (const actor of global.get_window_actors()) {
+                const window = actor.meta_window;
+                if (window && this._dragBridge.ownsPid(window.get_pid())) {
+                    window.activate(global.get_current_time());
+                    break;
+                }
+            }
+        } catch (error) {
+            Main.notifyError('FocusTrail Drag', error.message);
+        }
+    }
+
     _selectionFilesForRow(row) {
         if (!row || !this._isRowMultiSelected(row)) {
             const file = row?._folderBrowserFile;
@@ -2677,6 +2711,10 @@ class BookmarksIndicator extends PanelMenu.Button {
         }, archive ? 'package-x-generic-symbolic' : 'document-open-symbolic');
 
         if (!virtual && file) {
+            menu.addAction('Drag to Another App…   Ctrl+Shift+D', () => {
+                this._openDragWindow(row);
+            }, 'document-send-symbolic');
+
             const fileManagerName = this._getDefaultFileManagerName();
             menu.addAction(`Open in ${fileManagerName}`, () => {
                 this._openRowInFileManager(row);
@@ -7527,7 +7565,7 @@ extends Extension {
         this._trashShortcutAccelerator = null;
         this._trashShortcutSettingId = 0;
 
-        this._indicator = new BookmarksIndicator(this._settings);
+        this._indicator = new BookmarksIndicator(this._settings, this.path);
 
         Main.panel.addToStatusArea(
             this.uuid,

@@ -274,7 +274,7 @@ export default class FoldersPreferences extends ExtensionPreferences {
 
         const contextRow = new Adw.ActionRow({
             title: 'Context menu & selection shortcuts',
-            subtitle: 'Esc: deselect • Shift+F10/Menu: context menu • Shift+↑/↓: range select • Ctrl+Space: toggle • Ctrl+A: select all • Ctrl+Shift+T: Trash while Folders is open',
+            subtitle: 'Ctrl+Shift+D: drag to another app • Esc: deselect • Shift+F10/Menu: context menu • Shift+↑/↓: range select • Ctrl+Space: toggle • Ctrl+A: select all • Ctrl+Shift+T: Trash while Folders is open',
         });
         contextRow.add_css_class('property');
         shortcutGroup.add(contextRow);

@@ -1,8 +1,8 @@
 {
   "uuid": "bookmarks-only@azhan",
-  "name": "Folders Column Browser Advanced V10.11 Focus Repair",
-  "description": "Keyboard-driven Miller-column file browser with natural multi-selection/deselection, preserved deep columns across menu reopen, smooth horizontal reveals, configurable Trash shortcut, previews, sorting, archive extraction, pinning, LRU cache, Places/Drives, and native multi-page preferences.",
-  "version": 22,
+  "name": "FocusTrail Columns \u2014 Drag Window",
+  "description": "Keyboard-driven Miller-column file browser with natural multi-selection/deselection, preserved deep columns across menu reopen, smooth horizontal reveals, configurable Trash shortcut, previews, sorting, archive extraction, pinning, LRU cache, Places/Drives, and native multi-page preferences. Native GTK drag window for sending selected local files to other apps (Ctrl+Shift+D).",
+  "version": 24,
   "shell-version": [
     "45",
     "46",
