@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.bookmarks-only" path="/org/gnome/shell/extensions/bookmarks-only/">
+    <key name="preview-enabled" type="b">
+      <default>true</default>
+      <summary>Enable previews</summary>
+    </key>
+    <key name="file-preview-enabled" type="b">
+      <default>true</default>
+      <summary>Enable file previews</summary>
+    </key>
+    <key name="folder-preview-enabled" type="b">
+      <default>true</default>
+      <summary>Enable folder previews</summary>
+    </key>
+    <key name="keyboard-preview-enabled" type="b">
+      <default>true</default>
+      <summary>Show previews for keyboard focus</summary>
+    </key>
+    <key name="preview-rightmost-only" type="b">
+      <default>false</default>
+      <summary>Only preview rows from the rightmost open Miller column</summary>
+    </key>
+    <key name="mouse-preview-close-delay-ms" type="i">
+      <range min="0" max="1000"/>
+      <default>200</default>
+      <summary>Debounce after a real mouse exit; previews do not auto-expire while active</summary>
+    </key>
+    <key name="preload-previews" type="b">
+      <default>true</default>
+      <summary>Preload previewable files in open folders</summary>
+    </key>
+    <key name="preview-animations-enabled" type="b">
+      <default>true</default>
+      <summary>Animate preview opening, closing and replacement</summary>
+    </key>
+    <key name="animate-intermediate-previews" type="b">
+      <default>true</default>
+      <summary>Animate previews inserted between open Miller columns</summary>
+    </key>
+    <key name="preview-open-duration-ms" type="i">
+      <range min="0" max="600"/>
+      <default>130</default>
+      <summary>Preview opening animation duration in milliseconds</summary>
+    </key>
+    <key name="preview-close-duration-ms" type="i">
+      <range min="0" max="800"/>
+      <default>220</default>
+      <summary>Preview closing animation duration in milliseconds</summary>
+    </key>
+    <key name="preview-switch-duration-ms" type="i">
+      <range min="0" max="400"/>
+      <default>70</default>
+      <summary>Preview replacement animation duration in milliseconds</summary>
+    </key>
+    <key name="horizontal-pan-duration-ms" type="i">
+      <range min="0" max="1000"/>
+      <default>260</default>
+      <summary>Horizontal viewport reveal animation duration in milliseconds</summary>
+    </key>
+    <key name="cache-retention-seconds" type="i">
+      <range min="0" max="3600"/>
+      <default>60</default>
+      <summary>Preview cache retention after a folder or menu closes</summary>
+    </key>
+    <key name="cache-limit-mb" type="d">
+      <range min="0.5" max="256.0"/>
+      <default>3.0</default>
+      <summary>Maximum estimated preview cache size in megabytes</summary>
+    </key>
+    <key name="preview-image-size" type="i">
+      <range min="96" max="512"/>
+      <default>192</default>
+      <summary>Maximum decoded image preview size</summary>
+    </key>
+    <key name="folder-preview-max-items" type="i">
+      <range min="4" max="50"/>
+      <default>14</default>
+      <summary>Maximum number of children shown in a folder preview</summary>
+    </key>
+    <key name="show-places" type="b">
+      <default>true</default>
+      <summary>Show the virtual Places folder</summary>
+    </key>
+    <key name="show-drives" type="b">
+      <default>true</default>
+      <summary>Show the virtual Drives folder</summary>
+    </key>
+    <key name="show-hidden-files" type="b">
+      <default>false</default>
+      <summary>Show hidden files and folders</summary>
+    </key>
+    <key name="menu-shortcut" type="s">
+      <default>'&lt;Super&gt;f'</default>
+      <summary>Global accelerator used to toggle the Folders menu</summary>
+    </key>
+    <key name="trash-shortcut" type="s">
+      <default>'&lt;Super&gt;&lt;Shift&gt;t'</default>
+      <summary>Global accelerator used to open Trash</summary>
+    </key>
+  </schema>
+</schemalist>

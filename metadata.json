@@ -1,0 +1,16 @@
+{
+  "uuid": "bookmarks-only@azhan",
+  "name": "Folders Column Browser Advanced V10.11 Focus Repair",
+  "description": "Keyboard-driven Miller-column file browser with natural multi-selection/deselection, preserved deep columns across menu reopen, smooth horizontal reveals, configurable Trash shortcut, previews, sorting, archive extraction, pinning, LRU cache, Places/Drives, and native multi-page preferences.",
+  "version": 22,
+  "shell-version": [
+    "45",
+    "46",
+    "47",
+    "48",
+    "49",
+    "50",
+    "51"
+  ],
+  "settings-schema": "org.gnome.shell.extensions.bookmarks-only"
+}
