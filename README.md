@@ -97,4 +97,4 @@ If the installed schema is missing, run `./repair-current-install.sh` and check 
 
 ## License
 
-No license is asserted in this package. Add one after confirming the rights to all included code.
+Licensed under the MIT License. See [LICENSE](LICENSE).
