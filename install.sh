@@ -56,7 +56,7 @@ fi
 if ! gnome-extensions enable "$UUID"; then
     printf 'Files installed. Log out and back in, then enable %s.\n' "$UUID"
 fi
-printf '\nInstalled FocusTrail Columns Drag, internal version 24.\n'
+printf '\nInstalled FocusTrail Columns Drag, internal version 25.\n'
 printf 'Select files in Folders, press Ctrl+Shift+D, then drag from the new window.\n'
 printf 'After an upgrade, log out and back in so Shell reloads imported modules.\n'
 printf 'Check: gnome-extensions info %s\n' "$UUID"

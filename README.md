@@ -1,6 +1,6 @@
 # FocusTrail Columns
 
-A keyboard-driven file browser in the GNOME top bar, with side-by-side Miller columns, file operations, previews, and a visible focus trail. The active row gets a gray background and border. This repository packages the **Folders Column Browser Advanced V10.11 Focus Repair**, internal version **24**, retaining its original UUID `bookmarks-only@azhan` for upgrades.
+A keyboard-driven file browser in the GNOME top bar, with side-by-side Miller columns, file operations, previews, and a visible focus trail. The active row gets a gray background and border. This repository packages the **Folders Column Browser Advanced V10.11 Focus Repair**, internal version **25**, retaining its original UUID `bookmarks-only@azhan` for upgrades.
 
 ## Drag files into WhatsApp and other apps
 
@@ -70,6 +70,14 @@ Plain arrows and clicks on empty browser space clear multi-selection. Reopening 
 - **Pin and unpin:** Right-click a folder and select **Pin Folder** to add it to GTK bookmarks. A pinned folder offers **Change Pinned Display Name…** and **Unpin Folder**. The display name changes the bookmark label; ordinary Rename changes the actual folder name. Unpinning does not delete the directory.
 - **Previews:** Hover or keyboard focus can show images, text, PDFs, supported documents, and folder contents. Folder preview item count and decoded image size are adjustable. File coverage depends on format and available handlers.
 
+## Paste destination
+
+By default, **Ctrl + V** and the context menu’s **Paste Here** paste into the folder displayed by the focused column. For example, if the Downloads column highlights a subfolder named Photos, pasting places files in Downloads. Open Photos and focus its column to paste there.
+
+To restore the old behavior, enable **Browser → Navigation → Paste into focused child folder** in extension settings. The switch applies immediately and defaults to off, including after Reset all settings.
+
+Bookmarks and virtual location lists do not represent one containing folder. When focused there, a real folder row remains the paste destination.
+
 ## Preview cache
 
 Preloading previewable files in open folders helps them appear quickly on subsequent focus or hover. Entries stay available while their folder is open. After a folder or menu closes, unused entries remain **60 seconds by default** (adjustable; zero clears immediately).
@@ -105,7 +113,7 @@ Download and extract this repository or clone it. In the project directory run:
 gnome-extensions info bookmarks-only@azhan
 ```
 
-The expected internal version is **24**. The installer backs up an existing installation in `~/.local/share/bookmarks-only-backups/`, copies source into `~/.local/share/gnome-shell/extensions/bookmarks-only@azhan`, compiles the schema, and enables the extension. Existing settings under the same schema remain. After upgrading, log out and back in to reload Shell JavaScript modules. Merely disabling and enabling can leave imported modules cached.
+The expected internal version is **25**. The installer backs up an existing installation in `~/.local/share/bookmarks-only-backups/`, copies source into `~/.local/share/gnome-shell/extensions/bookmarks-only@azhan`, compiles the schema, and enables the extension. Existing settings under the same schema remain. After upgrading, log out and back in to reload Shell JavaScript modules. Merely disabling and enabling can leave imported modules cached.
 
 If the installed schema is missing, run `./repair-current-install.sh` and check extension info again.
 

@@ -90,6 +90,11 @@
       <default>false</default>
       <summary>Show hidden files and folders</summary>
     </key>
+    <key name="paste-into-focused-folder" type="b">
+      <default>false</default>
+      <summary>Paste into the focused child folder instead of the current column</summary>
+      <description>When disabled, paste into the directory displayed by the focused column. Bookmarks and virtual location lists use the focused real folder because they have no containing directory.</description>
+    </key>
     <key name="menu-shortcut" type="s">
       <default>'&lt;Super&gt;f'</default>
       <summary>Global accelerator used to toggle the Folders menu</summary>

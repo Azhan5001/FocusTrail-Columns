@@ -3459,21 +3459,20 @@ class BookmarksIndicator extends PanelMenu.Button {
 
 
     _getPasteTargetForRow(row) {
-        const depth = row._folderBrowserDepth;
+        if (!row)
+            return null;
+        const columnDirectory = this._columnDirectories[row._folderBrowserDepth] ?? null;
 
-        /*
-         * Paste into the highlighted folder when the highlighted row is a
-         * directory.  The old build always returned the column's parent for
-         * depth > 0, which made cut/paste appear to fail or simply rename an
-         * item in the same directory.
-         */
+        // Default: the folder whose contents are displayed in this column.
+        // Read the setting on each paste so preference changes apply immediately.
+        if (!this._settingBoolean('paste-into-focused-folder', false) && columnDirectory)
+            return columnDirectory;
+
+        // Bookmarks and virtual location lists have no containing directory.
+        // A real folder row there remains a usable destination in either mode.
         if (row._folderBrowserIsDirectory && row._folderBrowserFile)
             return row._folderBrowserFile;
-
-        if (depth === 0)
-            return null;
-
-        return this._columnDirectories[depth] ?? null;
+        return columnDirectory;
     }
 
 

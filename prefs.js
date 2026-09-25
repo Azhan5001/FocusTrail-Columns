@@ -214,6 +214,10 @@ export default class FoldersPreferences extends ExtensionPreferences {
         });
         browserPage.add(navigationGroup);
 
+        this._addSwitch(settings, navigationGroup, 'paste-into-focused-folder',
+            'Paste into focused child folder',
+            'Off by default: Ctrl+V and Paste Here use the current column’s folder. Turn on to paste into its focused child folder instead.');
+
         const horizontalPanRow = this._makeSpinRow(
             'Horizontal reveal transition',
             'Milliseconds used when reopening the menu or revealing a rightmost preview. 0 disables the animation. Default: 260 ms.',
@@ -302,6 +306,7 @@ export default class FoldersPreferences extends ExtensionPreferences {
                 'preview-close-duration-ms',
                 'preview-switch-duration-ms',
                 'horizontal-pan-duration-ms',
+                'paste-into-focused-folder',
                 'preload-previews',
                 'cache-retention-seconds',
                 'cache-limit-mb',
