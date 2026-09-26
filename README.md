@@ -1,3 +1,23 @@
+# FocusTrail Columns v25.6 — Preview Right Navigation
+
+- Fixes Right Arrow navigation when a file preview is inserted between a parent column and an already-open child column.
+- Preview remains an inspector only and is skipped by keyboard column navigation.
+- Preserves v25.5 authoritative auto-reveal, smooth transitions, branch switching, paste stability, and preview reveal fixes.
+
+## v25.5 smooth branch replacement
+
+- Switching to a different folder from an earlier column now animates the old descendant branch out before opening the replacement branch.
+- The replacement column then uses the existing smooth open animation and automatic viewport reveal.
+- The incoming replacement is created before the final width/clamp pass, preventing a one-frame viewport snap while the old branch disappears.
+- Keeps the v25.3 automatic reveal, v25.2 smooth transitions, and v25.1 preview/paste stability fixes.
+
+
+## v25.3 viewport reveal fix
+
+- Newly opened folder columns now wait for the browser width update and clamp pass to finish before starting the smooth horizontal reveal.
+- Fixes the regression where new columns opened outside the viewport and only became visible after hovering/scrolling.
+- Keeps the v25.2 smooth open/close and column-pan transitions plus the v25.1 preview/paste stability fixes.
+
 # FocusTrail Columns
 
 A keyboard-driven file browser in the GNOME top bar, with side-by-side Miller columns, file operations, previews, and a visible focus trail. The active row gets a gray background and border. This repository packages the **Folders Column Browser Advanced V10.11 Focus Repair**, internal version **25**, retaining its original UUID `bookmarks-only@azhan` for upgrades.
@@ -150,3 +170,8 @@ The first two commands test logic and installation with mocked desktop commands.
 ## Updating an existing GitHub repository
 
 Copy this build's source files, helper files, docs, tests and installer into your existing working tree. Keep its `.git` directory and any `LICENSE` you already added. Review `git diff`, then commit and push. Installing the extension and updating your GitHub checkout are separate operations.
+
+
+## v25.5 viewport reveal regression fix
+
+Folder-opening and branch-replacement transitions now schedule their final horizontal reveal only after the post-removal width/clamp work. This prevents the clamp from cancelling the pan and leaving new columns outside the viewport until preview/hover activity occurs.

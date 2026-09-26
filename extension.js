@@ -133,6 +133,8 @@ const DEFAULT_PREVIEW_OPEN_DURATION_MS = 130;
 const DEFAULT_PREVIEW_CLOSE_DURATION_MS = 220;
 const DEFAULT_PREVIEW_SWITCH_DURATION_MS = 70;
 const DEFAULT_HORIZONTAL_PAN_DURATION_MS = 260;
+const COLUMN_OPEN_DURATION_MS = 150;
+const COLUMN_CLOSE_DURATION_MS = 140;
 
 /*
  * Used only if USE_MEASURED_COLUMN_WIDTHS = false.
@@ -945,44 +947,55 @@ class BookmarksIndicator extends PanelMenu.Button {
         }
 
         this._setSelectedRow(currentDepth, selectedRow);
-        this._removeColumnsAfter(currentDepth + 1);
 
-        const title = groupId === 'drives' ? 'Drives' : 'Places';
-        const list = this._createColumn(title, null);
-        const depth = currentDepth + 1;
-        const items = groupId === 'drives'
-            ? this._getDriveGroupItems()
-            : this._getPlacesGroupItems();
+        const openReplacementGroup = () => {
+            const title = groupId === 'drives' ? 'Drives' : 'Places';
+            const list = this._createColumn(title, null);
+            const depth = currentDepth + 1;
+            const items = groupId === 'drives'
+                ? this._getDriveGroupItems()
+                : this._getPlacesGroupItems();
 
-        if (items.length === 0) {
-            this._addMessage(
-                list,
-                groupId === 'drives' ? 'No mounted drives' : 'No places found'
-            );
-        }
+            if (items.length === 0) {
+                this._addMessage(
+                    list,
+                    groupId === 'drives' ? 'No mounted drives' : 'No places found'
+                );
+            }
 
-        for (const item of items) {
-            let childRow;
-            childRow = this._createEntryRow({
-                name: item.name,
-                icon: item.icon instanceof Gio.Icon
-                    ? new St.Icon({gicon: item.icon, icon_size: 16})
-                    : new St.Icon({
-                        icon_name: item.iconName ?? 'folder-symbolic',
-                        icon_size: 16,
-                    }),
-                isDirectory: true,
-                file: item.file,
-                depth,
-                onActivate: () => {
-                    this._toggleDirectoryColumn(item.file, depth, childRow);
-                },
-            });
-            list.add_child(childRow);
-        }
+            for (const item of items) {
+                let childRow;
+                childRow = this._createEntryRow({
+                    name: item.name,
+                    icon: item.icon instanceof Gio.Icon
+                        ? new St.Icon({gicon: item.icon, icon_size: 16})
+                        : new St.Icon({
+                            icon_name: item.iconName ?? 'folder-symbolic',
+                            icon_size: 16,
+                        }),
+                    isDirectory: true,
+                    file: item.file,
+                    depth,
+                    onActivate: () => {
+                        this._toggleDirectoryColumn(item.file, depth, childRow);
+                    },
+                });
+                list.add_child(childRow);
+            }
 
-        this._scheduleBrowserWidthUpdate();
-        this._scrollToNewestColumn();
+            this._animateColumnIn(this._columns[depth]);
+            this._scheduleBrowserWidthUpdate();
+        };
+
+        // When replacing a branch, let the old descendants visibly leave
+        // before inserting the new child. This keeps branch changes from
+        // snapping even when several columns were open to the right.
+        this._removeColumnsAfter(
+            currentDepth + 1,
+            true,
+            openReplacementGroup,
+            true
+        );
     }
 
 
@@ -1509,34 +1522,43 @@ class BookmarksIndicator extends PanelMenu.Button {
         );
 
 
+        const openReplacementColumn = () => {
+            const folderName =
+                this._getDisplayName(
+                    directory
+                );
+
+
+            const list =
+                this._createColumn(
+                    folderName,
+                    directory
+                );
+
+
+            this._populateDirectoryColumn(
+                list,
+                directory,
+                currentDepth + 1
+            );
+
+
+            this._animateColumnIn(this._columns[currentDepth + 1]);
+            this._scheduleBrowserWidthUpdate();
+        };
+
+
+        // Branch replacement is a two-part transition: first animate every
+        // descendant column out, then build and animate the replacement child
+        // in. Previously this path passed `false` here, which destroyed the old
+        // branch in one frame and made switching folders from an earlier column
+        // feel much harsher than normal opening/closing.
         this._removeColumnsAfter(
-            currentDepth + 1
+            currentDepth + 1,
+            true,
+            openReplacementColumn,
+            true
         );
-
-
-        const folderName =
-            this._getDisplayName(
-                directory
-            );
-
-
-        const list =
-            this._createColumn(
-                folderName,
-                directory
-            );
-
-
-        this._populateDirectoryColumn(
-            list,
-            directory,
-            currentDepth + 1
-        );
-
-
-        this._scheduleBrowserWidthUpdate();
-
-        this._scrollToNewestColumn();
     }
 
 
@@ -1635,9 +1657,89 @@ class BookmarksIndicator extends PanelMenu.Button {
                 this._selectedRows.delete(existingDepth);
         }
 
-        this._removeColumnsAfter(depth + 1);
+        this._removeColumnsAfter(depth + 1, false);
         this._populateDirectoryColumn(list, directory, depth);
         this._scheduleBrowserWidthUpdate();
+    }
+
+
+    _refreshDirectoryColumnPreservingView(depth) {
+        if (depth <= 0 || depth >= this._columns.length)
+            return;
+
+        const directory = this._columnDirectories[depth];
+        const list = this._columnLists[depth] ?? null;
+        if (!directory || !list)
+            return;
+
+        const rowUri = row => row?._folderBrowserFile?.get_uri?.() ?? null;
+        const selectedUri = rowUri(this._selectedRows.get(depth));
+        const lastFocusedUri = rowUri(this._lastFocusedRows.get(depth));
+        const explicitFocusedUri =
+            this._explicitFocusedRow?._folderBrowserDepth === depth
+                ? rowUri(this._explicitFocusedRow)
+                : null;
+        const previewUri =
+            this._previewSourceDepth === depth
+                ? rowUri(this._previewSourceRow)
+                : null;
+
+        // Rebuild only this column's rows. Unlike the normal navigation
+        // refresh, do NOT close the preview or discard deeper Miller columns.
+        this._populateDirectoryColumn(list, directory, depth);
+
+        const rows = this._columnRows[depth] ?? [];
+        const findByUri = uri =>
+            uri ? (rows.find(row => rowUri(row) === uri) ?? null) : null;
+
+        const selectedRow = findByUri(selectedUri);
+        if (selectedRow) {
+            this._selectedRows.set(depth, selectedRow);
+            try {
+                selectedRow.add_style_pseudo_class('active');
+            } catch {
+                // Ignore actor styling failures.
+            }
+        } else {
+            this._selectedRows.delete(depth);
+        }
+
+        const lastFocusedRow = findByUri(lastFocusedUri);
+        if (lastFocusedRow)
+            this._lastFocusedRows.set(depth, lastFocusedRow);
+
+        if (previewUri) {
+            const previewRow = findByUri(previewUri);
+            if (previewRow)
+                this._previewSourceRow = previewRow;
+        }
+
+        if (explicitFocusedUri) {
+            const focusedRow = findByUri(explicitFocusedUri);
+            if (focusedRow)
+                this._explicitFocusedRow = focusedRow;
+        }
+
+        // Clipboard visuals belong to row actors and must be re-applied after
+        // rebuilding the list. This keeps cut/copy feedback stable too.
+        for (const row of rows)
+            this._applyClipboardVisual(row);
+
+        this._scheduleBrowserWidthUpdate();
+    }
+
+
+    _refreshDirectoryPreservingView(directory) {
+        if (!directory)
+            return;
+
+        for (let depth = 1; depth < this._columnDirectories.length; depth++) {
+            const openDirectory = this._columnDirectories[depth];
+            if (openDirectory?.equal?.(directory)) {
+                this._refreshDirectoryColumnPreservingView(depth);
+                return;
+            }
+        }
     }
 
 
@@ -1872,7 +1974,18 @@ class BookmarksIndicator extends PanelMenu.Button {
             } else {
                 if (!ctrlHeld)
                     this._clearMultiSelection();
-                this._openFocusedDirectoryAndEnter(row);
+
+                /*
+                 * A preview is an inspector, not a Miller-column navigation
+                 * stop. If a normal file is focused while a real child column
+                 * is already open, Right Arrow skips the preview and enters
+                 * that child column. Directories keep the normal open/enter
+                 * behaviour.
+                 */
+                if (row._folderBrowserIsDirectory)
+                    this._openFocusedDirectoryAndEnter(row);
+                else
+                    this._focusNextOpenColumn(depth);
             }
 
             return Clutter.EVENT_STOP;
@@ -2529,9 +2642,9 @@ class BookmarksIndicator extends PanelMenu.Button {
             const pageSize = adjustment.get_page_size();
 
             if (columnLeft < value) {
-                adjustment.set_value(columnLeft);
+                this._animateHorizontalAdjustmentTo(columnLeft);
             } else if (columnRight > value + pageSize) {
-                adjustment.set_value(
+                this._animateHorizontalAdjustmentTo(
                     Math.max(
                         adjustment.get_lower(),
                         columnRight - pageSize
@@ -3595,12 +3708,12 @@ class BookmarksIndicator extends PanelMenu.Button {
              * keyboard focus before the refresh.  This avoids the "focus died
              * after paste" behaviour of the previous build.
              */
-            this._refreshDirectory(targetDirectory);
+            this._refreshDirectoryPreservingView(targetDirectory);
 
             if (mode === 'cut') {
                 for (const parent of sourceParents) {
                     if (!parent.equal(targetDirectory))
-                        this._refreshDirectory(parent);
+                        this._refreshDirectoryPreservingView(parent);
                 }
             }
 
@@ -6843,6 +6956,21 @@ class BookmarksIndicator extends PanelMenu.Button {
             reveal();
             return GLib.SOURCE_REMOVE;
         });
+
+        // The preview can still be growing from width=1 to its full width when
+        // the early passes above run. Do one final reveal after the configured
+        // open/switch animation has completed so the adjustment's upper bound
+        // includes the preview's final allocation. This fixes the rightmost
+        // preview stopping around 70-75% of the way across.
+        const finalRevealDelay = Math.max(
+            110,
+            this._previewOpenDurationMs() + 40,
+            this._previewSwitchDurationMs() + 40
+        );
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, finalRevealDelay, () => {
+            reveal();
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
 
@@ -6941,6 +7069,65 @@ class BookmarksIndicator extends PanelMenu.Button {
     }
 
 
+    _animateColumnIn(column) {
+        if (!column)
+            return;
+
+        try {
+            column.remove_all_transitions?.();
+            column.set_opacity(0);
+            column.translation_x = 12;
+            column.ease({
+                opacity: 255,
+                translation_x: 0,
+                duration: COLUMN_OPEN_DURATION_MS,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+        } catch {
+            try {
+                column.set_opacity(255);
+                column.translation_x = 0;
+            } catch {
+                // Ignore stale actors.
+            }
+        }
+    }
+
+
+    _animateColumnOut(column, onComplete) {
+        if (!column) {
+            onComplete?.();
+            return;
+        }
+
+        let completed = false;
+        const finish = () => {
+            if (completed)
+                return;
+            completed = true;
+            try {
+                column.destroy();
+            } catch {
+                // Ignore stale actors.
+            }
+            onComplete?.();
+        };
+
+        try {
+            column.remove_all_transitions?.();
+            column.ease({
+                opacity: 0,
+                translation_x: 12,
+                duration: COLUMN_CLOSE_DURATION_MS,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                onComplete: finish,
+            });
+        } catch {
+            finish();
+        }
+    }
+
+
     /*
      * =====================================================
      * REMOVE COLUMNS TO RIGHT
@@ -6948,7 +7135,10 @@ class BookmarksIndicator extends PanelMenu.Button {
      */
 
     _removeColumnsAfter(
-        keepCount
+        keepCount,
+        animate = true,
+        onComplete = null,
+        revealNewestAfter = false
     ) {
         if (
             this._previewSourceDepth !== null &&
@@ -6957,6 +7147,8 @@ class BookmarksIndicator extends PanelMenu.Button {
             this._previewToken++;
             this._hidePreview();
         }
+
+        const removedColumns = [];
 
         while (
             this._columns.length >
@@ -6968,7 +7160,7 @@ class BookmarksIndicator extends PanelMenu.Button {
 
             const removedDepth = this._columns.length;
 
-            column.destroy();
+            removedColumns.push(column);
             this._columnRows.pop();
             this._columnScrolls.pop();
             this._columnLists.pop();
@@ -6979,10 +7171,55 @@ class BookmarksIndicator extends PanelMenu.Button {
                 this._clearMultiSelection(false);
         }
 
+        const finishRemoval = () => {
+            // For branch replacement, create the incoming child before the
+            // post-removal width/clamp pass. That way the browser never has a
+            // one-frame "short" layout that would snap the viewport left.
+            try {
+                onComplete?.();
+            } catch (error) {
+                logError(error, 'FocusTrail: column-removal completion failed');
+            }
+
+            this._scheduleBrowserWidthUpdate();
+            this._clampHorizontalPosition();
+
+            // Branch opening/replacement must end with the reveal, not with a
+            // clamp. v25.4 started the reveal inside onComplete(), which meant
+            // the width/clamp work below could cancel that animation and leave
+            // freshly opened columns off-screen. Queue the reveal only after
+            // all post-removal layout/clamp work has been scheduled, making it
+            // the authoritative final viewport operation for this transition.
+            if (revealNewestAfter)
+                this._scrollToNewestColumn();
+        };
+
+        if (animate && removedColumns.length > 0) {
+            let remaining = removedColumns.length;
+            const finishOne = () => {
+                remaining--;
+                if (remaining > 0)
+                    return;
+
+                finishRemoval();
+            };
+
+            for (const column of removedColumns)
+                this._animateColumnOut(column, finishOne);
+        } else {
+            for (const column of removedColumns) {
+                try {
+                    column.destroy();
+                } catch {
+                    // Ignore stale actors.
+                }
+            }
+            finishRemoval();
+        }
+
 
         this._syncPreviewCachePins('folder columns changed');
         this._writePreviewCacheStatus();
-        this._scheduleBrowserWidthUpdate();
     }
 
 
@@ -6993,52 +7230,47 @@ class BookmarksIndicator extends PanelMenu.Button {
      */
 
     _scrollToNewestColumn() {
+        /*
+         * Opening a column also queues _scheduleBrowserWidthUpdate(), and that
+         * update queues _clampHorizontalPosition() on the following idle turn.
+         * If we start the pan on the first idle turn, that clamp cancels the
+         * animation and leaves the new column outside the viewport until some
+         * later pointer/scroll event happens.
+         *
+         * Wait through both layout idle turns, then make the reveal the final
+         * viewport operation.  Refresh the browser width once more here so the
+         * adjustment's upper bound definitely includes the newly allocated
+         * column before calculating the destination.
+         */
         GLib.idle_add(
             GLib.PRIORITY_DEFAULT_IDLE,
-
             () => {
-                if (
-                    !this._horizontalScroll
-                ) {
-                    return GLib.SOURCE_REMOVE;
-                }
+                GLib.idle_add(
+                    GLib.PRIORITY_DEFAULT_IDLE,
+                    () => {
+                        if (!this._horizontalScroll)
+                            return GLib.SOURCE_REMOVE;
 
+                        try {
+                            this._updateBrowserWidth();
 
-                try {
-                    const adjustment =
-                        this._horizontalScroll
-                            .get_hadjustment();
+                            const adjustment =
+                                this._horizontalScroll.get_hadjustment();
+                            const lower = adjustment.get_lower();
+                            const maximum = Math.max(
+                                lower,
+                                adjustment.get_upper() - adjustment.get_page_size()
+                            );
 
+                            if (maximum > lower + 1)
+                                this._animateHorizontalAdjustmentTo(maximum);
+                        } catch {
+                            // Ignore layout races while a column is being built.
+                        }
 
-                    const lower =
-                        adjustment.get_lower();
-
-
-                    const maximum =
-                        Math.max(
-                            lower,
-
-                            adjustment.get_upper() -
-                            adjustment.get_page_size()
-                        );
-
-
-                    /*
-                     * Only move if real horizontal
-                     * overflow exists.
-                     */
-                    if (
-                        maximum >
-                        lower + 1
-                    ) {
-                        adjustment.set_value(
-                            maximum
-                        );
+                        return GLib.SOURCE_REMOVE;
                     }
-                } catch {
-                    // Ignore.
-                }
-
+                );
 
                 return GLib.SOURCE_REMOVE;
             }
@@ -7083,7 +7315,7 @@ class BookmarksIndicator extends PanelMenu.Button {
                         );
 
 
-                    adjustment.set_value(
+                    this._animateHorizontalAdjustmentTo(
                         Math.min(
                             Math.max(
                                 adjustment.get_value(),
