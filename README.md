@@ -1,28 +1,58 @@
-# FocusTrail Columns v25.6 — Preview Right Navigation
-
-- Fixes Right Arrow navigation when a file preview is inserted between a parent column and an already-open child column.
-- Preview remains an inspector only and is skipped by keyboard column navigation.
-- Preserves v25.5 authoritative auto-reveal, smooth transitions, branch switching, paste stability, and preview reveal fixes.
-
-## v25.5 smooth branch replacement
-
-- Switching to a different folder from an earlier column now animates the old descendant branch out before opening the replacement branch.
-- The replacement column then uses the existing smooth open animation and automatic viewport reveal.
-- The incoming replacement is created before the final width/clamp pass, preventing a one-frame viewport snap while the old branch disappears.
-- Keeps the v25.3 automatic reveal, v25.2 smooth transitions, and v25.1 preview/paste stability fixes.
-
-
-## v25.3 viewport reveal fix
-
-- Newly opened folder columns now wait for the browser width update and clamp pass to finish before starting the smooth horizontal reveal.
-- Fixes the regression where new columns opened outside the viewport and only became visible after hovering/scrolling.
-- Keeps the v25.2 smooth open/close and column-pan transitions plus the v25.1 preview/paste stability fixes.
-
 # FocusTrail Columns
 
-A keyboard-driven file browser in the GNOME top bar, with side-by-side Miller columns, file operations, previews, and a visible focus trail. The active row gets a gray background and border. This repository packages the **Folders Column Browser Advanced V10.11 Focus Repair**, internal version **25**, retaining its original UUID `bookmarks-only@azhan` for upgrades.
+**FocusTrail Columns** is a keyboard-first Miller-column file browser for the GNOME top bar that can be controlled almost entirely without touching the mouse. It lets you browse deeply nested folders in side-by-side columns, move between columns with the keyboard, preview images and supported files inline, perform copy/cut/paste/rename/delete operations, drag files into other applications through a native GTK drag window, use smooth opening/closing and viewport animations, cache previews for faster browsing, pin folders and give those pins custom display names, sort folders persistently, and quickly open any item in the system file manager when needed. The browser is designed to keep navigation fast and visible: focus follows your keyboard movement, previews act as inspectors rather than navigation stops, and open folder paths remain laid out as a Miller-column trail.
+
+## Screenshots
+
+> Put the screenshots in `assets/screenshots/` using the exact filenames shown below. Once the files are there, GitHub will display them automatically in this README.
+
+### Folder menu and Miller-column navigation
+
+![FocusTrail Columns folder menu](assets/screenshots/folder-menu.png)
+
+The main menu starts from your pinned/bookmarked locations and opens nested folders as side-by-side Miller columns. You can move through rows and columns entirely with the keyboard, while smooth viewport transitions keep the active column visible as the path gets deeper.
+
+### Image and file preview
+
+![FocusTrail Columns image preview](assets/screenshots/image-preview.png)
+
+Focusing or hovering a supported file can open an inline preview without leaving the folder browser. Previews are treated as inspectors rather than normal columns, so keyboard navigation can continue directly between the parent and child folder columns.
+
+### Right-click context menu
+
+![FocusTrail Columns context menu](assets/screenshots/context-menu.png)
+
+The context menu exposes actions such as open, rename, copy/cut, paste, delete, extract, pin/unpin, sort, properties, copy path, open in terminal, and open in the system file manager. The available actions adapt to the item that is currently focused or selected.
+
+### Custom names for pinned folders
+
+![FocusTrail Columns pinned display name](assets/screenshots/pinned-display-name.png)
+
+Pinned folders can be given a custom **display name** without renaming the real directory on disk. This is useful for shortening long paths, labeling remote folders, or giving bookmarks friendlier names while keeping the underlying folder untouched.
+
+### Native drag-and-drop window
+
+![FocusTrail Columns drag and drop window](assets/screenshots/drag-and-drop.png)
+
+Press **Ctrl + Shift + D** or choose **Drag to Another App…** to open the native FocusTrail Drag window for the focused file or current multi-selection. Press and hold the file card, drag it onto another application or browser drop target, and release; the helper provides real native file/URI data instead of merely pasting a filename.
+
+The drag helper uses a separate GTK window because GNOME Shell menu rows cannot reliably continue the same pointer drag directly into another application. Successful drops close the helper automatically unless **Keep open after a successful drop** is enabled, while cancelled or rejected drops leave it available so you can try again.
+
+### multi-selection and sorting
+
+![FocusTrail Columns multi-selection and sorting](assets/screenshots/multi-select-sort.png)
+
+Multi-selection supports Ctrl/Shift selection patterns and lets file operations act on several items at once. Folders can be sorted by **Name, Type, Size, or Modified**, in either direction, and those per-folder sorting choices persist across GNOME Shell and PC restarts.
+
+## What's new in v25.7
+
+- Per-folder sorting preferences now persist across GNOME Shell and PC restarts.
+- Sort field and direction are remembered independently for each folder.
+- Reset all settings also clears persisted folder-sort choices.
+- Preserves the smooth column transitions, branch replacement animation, automatic viewport reveal, paste stability, preview navigation, and preview reveal fixes from the previous builds.
 
 ## Drag files into WhatsApp and other apps
+
 
 1. Open the destination app or website and its file drop area.
 2. Open Folders, focus a local file, or select several files with Ctrl/Shift.
@@ -62,10 +92,10 @@ The installer checks actual GTK content-provider APIs before updating the extens
 | **Delete / Shift + Delete** | Move to Trash / permanently delete a child item |
 | **Ctrl + Z / Ctrl + Shift + Z** | Undo / redo a supported file operation (Ctrl + Y also redoes) |
 | **Ctrl + L** | Copy path or URI |
-| **Shift + Enter** | Open the item in the system file manager |
+| **Shift + Enter** | Open the focused item in the system file manager instead of activating it normally |
 | **Super + Shift + T** | Open Trash globally (customizable) |
 
-Enter extracts an archive into the current folder. The context menu can instead extract it into a new folder. Bookmark roots are protected from Shift + Delete.
+Enter extracts an archive into the current folder. **Shift + Enter** opens the focused item in the system file manager; the same action is also available from the context menu and folder header controls. **Shift + click is reserved for range selection.** The context menu can extract an archive into a new folder. Bookmark roots are protected from Shift + Delete.
 
 ### Selection and other keys
 
@@ -133,7 +163,7 @@ Download and extract this repository or clone it. In the project directory run:
 gnome-extensions info bookmarks-only@azhan
 ```
 
-The expected internal version is **25**. The installer backs up an existing installation in `~/.local/share/bookmarks-only-backups/`, copies source into `~/.local/share/gnome-shell/extensions/bookmarks-only@azhan`, compiles the schema, and enables the extension. Existing settings under the same schema remain. After upgrading, log out and back in to reload Shell JavaScript modules. Merely disabling and enabling can leave imported modules cached.
+The expected internal version is **25** (repository build v25.7). The installer backs up an existing installation in `~/.local/share/bookmarks-only-backups/`, copies source into `~/.local/share/gnome-shell/extensions/bookmarks-only@azhan`, compiles the schema, and enables the extension. Existing settings under the same schema remain. After upgrading, log out and back in to reload Shell JavaScript modules. Merely disabling and enabling can leave imported modules cached.
 
 If the installed schema is missing, run `./repair-current-install.sh` and check extension info again.
 
@@ -170,8 +200,3 @@ The first two commands test logic and installation with mocked desktop commands.
 ## Updating an existing GitHub repository
 
 Copy this build's source files, helper files, docs, tests and installer into your existing working tree. Keep its `.git` directory and any `LICENSE` you already added. Review `git diff`, then commit and push. Installing the extension and updating your GitHub checkout are separate operations.
-
-
-## v25.5 viewport reveal regression fix
-
-Folder-opening and branch-replacement transitions now schedule their final horizontal reveal only after the post-removal width/clamp work. This prevents the clamp from cancelling the pan and leaving new columns outside the viewport until preview/hover activity occurs.
